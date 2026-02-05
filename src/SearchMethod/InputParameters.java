@@ -29,6 +29,7 @@ public class InputParameters
 					case "-dMin": config.setDMin(getDMin(args[i+1]));break;
 					case "-gamma": config.setGamma(getGamma(args[i+1]));break;
 					case "-varphi": config.setVarphi(getVarphi(args[i+1]));break;
+					case "-seed": config.setRandomSeed(getSeed(args[i+1]));break;
 					
 				}
 			}
@@ -166,6 +167,20 @@ public class InputParameters
 			System.err.println("The -stoppingCriterion parameter must have the values "+Arrays.toString(StoppingCriterionType.values())+".");
 		}
 		return stoppingCriterion;
+	}
+
+	public Long getSeed(String text)
+	{
+		Long seed = null;
+		try 
+		{
+			seed = Long.valueOf(text);
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -seed parameter must contain a valid long integer value.");
+		}
+		return seed;
 	}
 
 	public String getFile() {

@@ -17,7 +17,7 @@ public abstract class Perturbation
 	protected int numRoutes;
 	protected Node solution[];
 	protected double f=0;
-	protected Random rand=new Random();
+	protected Random rand;
 	public double omega;
 	OmegaAdjustment chosenOmega;
 	Config config;
@@ -50,6 +50,12 @@ public abstract class Perturbation
 	HashMap<String, OmegaAdjustment> omegaSetup, IntraLocalSearch intraLocalSearch) 
 	{
 		this.config=config;
+		// Initialize random with seed if provided
+		if(config.getRandomSeed() != null) {
+			this.rand = new Random(config.getRandomSeed());
+		} else {
+			this.rand = new Random();
+		}
 		this.instance=instance;
 		this.insertionHeuristics=config.getInsertionHeuristics();
 		this.size=instance.getSize()-1;

@@ -18,13 +18,19 @@ public class OmegaAdjustment
 	Mean averageOmega;
 	
 	double actualOmega;
-	Random rand=new Random();
+	Random rand;
 	PerturbationType perturbationType;
 	int numIterUpdate;
 	IdealDist idealDist;
 	
 	public OmegaAdjustment(PerturbationType perturbationType, Config config, Integer size,IdealDist idealDist) 
 	{
+		// Initialize random with seed if provided
+		if(config.getRandomSeed() != null) {
+			this.rand = new Random(config.getRandomSeed());
+		} else {
+			this.rand = new Random();
+		}
 		this.perturbationType = perturbationType;
 		this.omega = idealDist.idealDist;
 		this.numIterUpdate = config.getGamma();

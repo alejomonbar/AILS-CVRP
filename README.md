@@ -75,6 +75,21 @@ Run the AILSII class that has the following parameters:
 
 **-dMin** : Final Reference distance between the reference solution and the solution obtained after the local search. The default value is 15.
 
+**-seed** : Random seed for reproducible results. When specified, all random number generators will use this seed, ensuring identical runs with the same parameters. Useful for debugging, benchmarking, and comparing algorithmic variants. If not specified, the algorithm uses non-deterministic randomization. Example: `-seed 42`
+
+## Reproducibility
+
+To ensure reproducible results for research and comparison purposes, use the `-seed` parameter:
+
+```console
+java -jar AILSII.jar -file data/E-n13-k4.vrp -rounded true -best 247 -limit 100 -stoppingCriterion Time -seed 42
+```
+
+Running the same command multiple times with the same seed will produce identical results. This is particularly important for:
+- Comparing different algorithmic variants or RL-enhanced versions
+- Debugging specific instances
+- Statistical analysis requiring multiple runs with controlled randomness
+
 ## Data
 
 The folder data contains all literature instances tested (files with extension .vrp). The files with the extension .sol refer to the Best Known Solutions (BKSs) used to calculate the gaps.

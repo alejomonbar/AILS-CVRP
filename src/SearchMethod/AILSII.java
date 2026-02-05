@@ -37,7 +37,7 @@ public class AILSII
 	long first,ini;
 	double timeAF,totalTime,time;
 	
-	Random rand=new Random();
+	Random rand;
 	
 	HashMap<String,OmegaAdjustment>omegaSetup=new HashMap<String,OmegaAdjustment>();
 
@@ -68,6 +68,15 @@ public class AILSII
 	{ 
 		this.instance=instance;
 		Config config=reader.getConfig();
+		
+		// Initialize random number generator with seed if provided
+		if(config.getRandomSeed() != null) {
+			this.rand = new Random(config.getRandomSeed());
+			System.out.println("Using random seed: " + config.getRandomSeed());
+		} else {
+			this.rand = new Random();
+			System.out.println("Using non-deterministic random (no seed)");
+		}
 		this.optimal=reader.getBest();
 		this.executionMaximumLimit=reader.getTimeLimit();
 		

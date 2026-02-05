@@ -20,6 +20,7 @@ public class Config implements Cloneable
 	double epsilon;
 	int knnLimit;
 	StoppingCriterionType stoppingCriterionType;
+	Long randomSeed; // null = no seed (non-deterministic), otherwise use this seed
 	
 	public Config() 
 	{
@@ -30,6 +31,7 @@ public class Config implements Cloneable
 		this.gamma=30; 
 		this.knnLimit=100;
 		this.varphi=40;
+		this.randomSeed=null; // Default: non-deterministic
 		
 		
 		this.epsilon=0.01;
@@ -173,5 +175,12 @@ public class Config implements Cloneable
 		this.stoppingCriterionType = stoppingCriterionType;
 	}
 
+	public Long getRandomSeed() {
+		return randomSeed;
+	}
+
+	public void setRandomSeed(Long randomSeed) {
+		this.randomSeed = randomSeed;
+	}
 
 }

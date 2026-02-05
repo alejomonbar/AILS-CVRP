@@ -14,7 +14,7 @@ public class ConstructSolution
 	private double f=0;
 	private int numRoutes;
 	private Node []solution;
-	protected Random rand=new Random();
+	protected Random rand;
 	protected int size;
 	Instance instance;
 	Node notInserted[];
@@ -22,6 +22,12 @@ public class ConstructSolution
 	
 	public ConstructSolution(Instance instance,Config config)
 	{
+		// Initialize random with seed if provided
+		if(config.getRandomSeed() != null) {
+			this.rand = new Random(config.getRandomSeed());
+		} else {
+			this.rand = new Random();
+		}
 		this.instance=instance;
 		this.routes=new Route[instance.getMaxNumberRoutes()];
 		this.size=instance.getSize()-1;
