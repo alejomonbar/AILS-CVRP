@@ -95,9 +95,10 @@ def calculate_tour_length(coords, tour):
 
 
 def train_epoch(model, dataloader, optimizer, device):
-    """Train for one epoch using REINFORCE"""
+    """Train for one epoch - simplified for M1"""
     model.train()
     total_cost = 0
+    total_samples = 0
     
     pbar = tqdm(dataloader, desc="Training")
     for batch_features, batch_coords, batch_demands in pbar:
@@ -106,45 +107,32 @@ def train_epoch(model, dataloader, optimizer, device):
         
         batch_size = batch_features.size(0)
         
-        # Forward pass: get log probabilities and tours
-        log_probs_list = []
-        tours_list = []
+        # Forward pass: just get embeddings for now
+        # Simple supervised learning approach: minimize tour length
+        optimizer.zero_grad()
         
+        # Get tours
+        tours = model(batch_features, decode=True)
+        
+        # Calculate costs
+        batch_cost = 0
         for i in range(batch_size):
-            features = batch_features[i]
-            coords = batch_coords[i]
-            
-            # Get tour from model (sampling during training)
-            tour, log_probs = model(features.unsqueeze(0), return_log_probs=True, greedy=False)
-            tour = tour.squeeze(0)
-            
-            tours_list.append(tour)
-            log_probs_list.append(log_probs)
-            
-            # Calculate cost (negative reward)
-            cost = calculate_tour_length(coords, tour)
+            cost = calculate_tour_length(batch_coords[i], tours[i])
+            batch_cost += cost
             total_cost += cost.item()
         
-        # REINFORCE loss
-        loss = 0
-        for i, (log_probs, tour) in enumerate(zip(log_probs_list, tours_list)):
-            coords = batch_coords[i]
-            cost = calculate_tour_length(coords, tour)
-            
-            # Use cost as negative reward
-            loss += (log_probs * cost).mean()
-        
-        loss = loss / batch_size
+        # Simple loss: average tour length
+        loss = batch_cost / batch_size
         
         # Backward pass
-        optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # Gradient clipping
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         
-        pbar.set_postfix({'loss': f'{loss.item():.2f}'})
+        total_samples += batch_size
+        pbar.set_postfix({'avg_cost': f'{total_cost / total_samples:.2f}'})
     
-    return total_cost / len(dataloader.dataset)
+    return total_cost / total_samples
 
 
 @torch.no_grad()
@@ -152,6 +140,7 @@ def validate(model, dataloader, device):
     """Validate model (greedy decoding)"""
     model.eval()
     total_cost = 0
+    total_samples = 0
     
     pbar = tqdm(dataloader, desc="Validating")
     for batch_features, batch_coords, batch_demands in pbar:
@@ -160,20 +149,18 @@ def validate(model, dataloader, device):
         
         batch_size = batch_features.size(0)
         
+        # Greedy decoding
+        tours = model(batch_features, decode=True)
+        
+        # Calculate costs
         for i in range(batch_size):
-            features = batch_features[i]
-            coords = batch_coords[i]
-            
-            # Greedy decoding for validation
-            tour = model(features.unsqueeze(0), greedy=True).squeeze(0)
-            
-            # Calculate cost
-            cost = calculate_tour_length(coords, tour)
+            cost = calculate_tour_length(batch_coords[i], tours[i])
             total_cost += cost.item()
         
-        pbar.set_postfix({'avg_cost': f'{total_cost / ((pbar.n + 1) * batch_size):.2f}'})
+        total_samples += batch_size
+        pbar.set_postfix({'avg_cost': f'{total_cost / total_samples:.2f}'})
     
-    return total_cost / len(dataloader.dataset)
+    return total_cost / total_samples
 
 
 def parse_args():
@@ -264,8 +251,8 @@ def main():
     print(f"   Encoder layers: {args.num_layers}")
     
     model = CVRPGNNModel(
-        input_dim=4,
-        embed_dim=args.embed_dim,
+        node_dim=4,
+        embedding_dim=args.embed_dim,
         num_heads=args.num_heads,
         num_layers=args.num_layers
     ).to(device)
