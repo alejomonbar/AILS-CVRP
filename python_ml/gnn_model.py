@@ -231,11 +231,12 @@ class CVRPGNNModel(nn.Module):
         visited[:, 0] = 1  # Depot always visited
         
         remaining_capacity = torch.ones(batch_size, 1, device=node_features.device)
+        current_load = torch.zeros(batch_size, 1, device=node_features.device)
         
         for step in range(num_nodes - 1):
-            # Context: last node embedding + capacity info
+            # Context: last node embedding + capacity info (remaining_capacity + current_load)
             current_emb = node_embeddings[:, current_node, :]
-            context = torch.cat([current_emb, remaining_capacity], dim=-1)
+            context = torch.cat([current_emb, remaining_capacity, current_load], dim=-1)
             
             # Get selection probabilities
             mask = (1 - visited) * (node_features[:, :, 2] <= remaining_capacity)  # Feasibility mask
@@ -251,9 +252,10 @@ class CVRPGNNModel(nn.Module):
             visited[range(batch_size), next_node] = 1
             demand = node_features[range(batch_size), next_node, 2]
             
-            # If returning to depot, reset capacity
+            # If returning to depot, reset capacity and load
             is_depot = (next_node == 0).float().unsqueeze(1)
             remaining_capacity = is_depot + (1 - is_depot) * (remaining_capacity - demand.unsqueeze(1))
+            current_load = (1 - is_depot) * (current_load + demand.unsqueeze(1))
             
             current_node = next_node
         
