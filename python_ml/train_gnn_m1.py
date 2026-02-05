@@ -95,7 +95,7 @@ def calculate_tour_length(coords, tour):
 
 
 def train_epoch(model, dataloader, optimizer, device):
-    """Train for one epoch - simplified for M1"""
+    """Train for one epoch - encoder pre-training approach"""
     model.train()
     total_cost = 0
     total_samples = 0
@@ -107,30 +107,34 @@ def train_epoch(model, dataloader, optimizer, device):
         
         batch_size = batch_features.size(0)
         
-        # Forward pass: just get embeddings for now
-        # Simple supervised learning approach: minimize tour length
         optimizer.zero_grad()
         
-        # Get tours
-        tours = model(batch_features, decode=True)
+        # Get node embeddings (don't decode yet)
+        node_embeddings = model(batch_features, decode=False)
         
-        # Calculate costs
-        batch_cost = 0
-        for i in range(batch_size):
-            cost = calculate_tour_length(batch_coords[i], tours[i])
-            batch_cost += cost
-            total_cost += cost.item()
+        # Simple self-supervised loss: embeddings should be distinguishable
+        # Maximize distance between different nodes, minimize within same position
+        embedding_loss = -torch.mean(torch.var(node_embeddings, dim=1))
         
-        # Simple loss: average tour length
-        loss = batch_cost / batch_size
+        # Add regularization to prevent collapse
+        l2_loss = 0.01 * torch.mean(node_embeddings ** 2)
+        
+        loss = embedding_loss + l2_loss
         
         # Backward pass
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         
+        # Evaluate tour quality (no gradients)
+        with torch.no_grad():
+            tours = model(batch_features, decode=True)
+            for i in range(batch_size):
+                cost = calculate_tour_length(batch_coords[i], tours[i])
+                total_cost += cost.item()
+        
         total_samples += batch_size
-        pbar.set_postfix({'avg_cost': f'{total_cost / total_samples:.2f}'})
+        pbar.set_postfix({'avg_cost': f'{total_cost / total_samples:.2f}', 'loss': f'{loss.item():.3f}'})
     
     return total_cost / total_samples
 
