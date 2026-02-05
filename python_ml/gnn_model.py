@@ -225,8 +225,8 @@ class CVRPGNNModel(nn.Module):
         batch_size, num_nodes, _ = node_features.size()
         tours = []
         
-        # Start from depot
-        current_node = 0
+        # Start from depot (scalar for all batches)
+        current_nodes = torch.zeros(batch_size, dtype=torch.long, device=node_features.device)
         visited = torch.zeros(batch_size, num_nodes, device=node_features.device)
         visited[:, 0] = 1  # Depot always visited
         
@@ -235,8 +235,8 @@ class CVRPGNNModel(nn.Module):
         
         for step in range(num_nodes - 1):
             # Context: last node embedding + capacity info (remaining_capacity + current_load)
-            current_emb = node_embeddings[:, current_node, :]
-            context = torch.cat([current_emb, remaining_capacity, current_load], dim=-1)
+            current_emb = node_embeddings[torch.arange(batch_size), current_nodes, :]  # [B, embedding_dim]
+            context = torch.cat([current_emb, remaining_capacity, current_load], dim=-1)  # [B, embedding_dim + 2]
             
             # Get selection probabilities
             mask = (1 - visited) * (node_features[:, :, 2] <= remaining_capacity)  # Feasibility mask
@@ -245,19 +245,19 @@ class CVRPGNNModel(nn.Module):
             _, probs = self.decoder(node_embeddings, context, mask)
             
             # Select next node (greedy)
-            next_node = torch.argmax(probs, dim=-1)
-            tours.append(next_node)
+            next_nodes = torch.argmax(probs, dim=-1)  # [B]
+            tours.append(next_nodes)
             
             # Update state
-            visited[range(batch_size), next_node] = 1
-            demand = node_features[range(batch_size), next_node, 2]
+            visited[torch.arange(batch_size), next_nodes] = 1
+            demand = node_features[torch.arange(batch_size), next_nodes, 2].unsqueeze(1)  # [B, 1]
             
             # If returning to depot, reset capacity and load
-            is_depot = (next_node == 0).float().unsqueeze(1)
-            remaining_capacity = is_depot + (1 - is_depot) * (remaining_capacity - demand.unsqueeze(1))
-            current_load = (1 - is_depot) * (current_load + demand.unsqueeze(1))
+            is_depot = (next_nodes == 0).float().unsqueeze(1)  # [B, 1]
+            remaining_capacity = is_depot + (1 - is_depot) * (remaining_capacity - demand)
+            current_load = (1 - is_depot) * (current_load + demand)
             
-            current_node = next_node
+            current_nodes = next_nodes
         
         tours = torch.stack(tours, dim=1)
         return tours
