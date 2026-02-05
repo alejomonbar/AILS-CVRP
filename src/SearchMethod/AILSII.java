@@ -63,10 +63,14 @@ public class AILSII
 	double epsilon;
 	DecimalFormat deci=new DecimalFormat("0.0000");
 	StoppingCriterionType stoppingCriterionType;
+	ResultsLogger logger;
+	InputParameters inputParams;
+	double previousBestF=Double.MAX_VALUE;
 	
 	public AILSII(Instance instance,InputParameters reader)
 	{ 
 		this.instance=instance;
+		this.inputParams=reader;
 		Config config=reader.getConfig();
 		
 		// Initialize random number generator with seed if provided
@@ -77,6 +81,11 @@ public class AILSII
 			this.rand = new Random();
 			System.out.println("Using non-deterministic random (no seed)");
 		}
+		
+		// Initialize results logger
+		this.logger = new ResultsLogger("experiments", reader.getFile(), config);
+		System.out.println("Logging results to: " + logger.getRunDir());
+		
 		this.optimal=reader.getBest();
 		this.executionMaximumLimit=reader.getTimeLimit();
 		
@@ -160,6 +169,26 @@ public class AILSII
 		}
 		
 		totalTime=(double)(System.currentTimeMillis()-first)/1000;
+		
+		// Log final summary
+		Config config = inputParams.getConfig();
+		logger.logSummary(
+			config.getRandomSeed(),
+			stoppingCriterionType.toString(),
+			executionMaximumLimit,
+			solution.f,
+			getGap(),
+			bestF,
+			100*((bestF-optimal)/optimal),
+			iterator,
+			timeAF,
+			iteratorMF,
+			totalTime
+		);
+		
+		// Close logger
+		logger.close();
+		System.out.println("\nResults saved to: " + logger.getRunDir());
 	}
 	
 	public void evaluateSolution()
@@ -184,6 +213,25 @@ public class AILSII
 				);
 			}
 		}
+		
+		// Log every iteration with detailed metrics (after potential best update)
+		double improvement = (previousBestF == Double.MAX_VALUE) ? 0 : previousBestF - bestF;
+		previousBestF = bestF;
+		
+		double currentTime = (double)(System.currentTimeMillis()-first)/1000;
+		logger.logIteration(
+			iterator,
+			currentTime,
+			solution.f,
+			getGap(),
+			solution.numRoutes,
+			acceptanceCriterion.getEta(),
+			selectedPerturbation.omega,
+			selectedPerturbation.getPerturbationType().toString(),
+			selectedPerturbation.selectedInsertionHeuristic.toString(),
+			distanceLS,
+			improvement
+		);
 	}
 	
 	private boolean stoppingCriterion()
