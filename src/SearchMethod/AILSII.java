@@ -17,6 +17,7 @@ import Improvement.FeasibilityPhase;
 import Perturbation.InsertionHeuristic;
 import Perturbation.Perturbation;
 import Solution.Solution;
+import RL.OperatorSelector;
 
 public class AILSII 
 {
@@ -45,6 +46,7 @@ public class AILSII
 	
 	Perturbation[] pertubOperators;
 	Perturbation selectedPerturbation;
+	OperatorSelector operatorSelector; // RL-based operator selection
 	
 	FeasibilityPhase feasibilityOperator;
 	ConstructSolution constructSolution;
@@ -135,6 +137,15 @@ public class AILSII
 			e.printStackTrace();
 		}
 		
+		// Initialize RL-based operator selector
+		this.operatorSelector = new OperatorSelector(
+			pertubOperators, 
+			config.getUcbExplorationParam(), 
+			config.getRandomSeed(), 
+			config.isRlOperatorSelection()
+		);
+		System.out.println("RL operator selection: " + (config.isRlOperatorSelection() ? "ENABLED" : "DISABLED"));
+		
 	}
 
 	public void search()
@@ -153,13 +164,21 @@ public class AILSII
 
 			solution.clone(referenceSolution);
 			
-			selectedPerturbation=pertubOperators[rand.nextInt(pertubOperators.length)];
+			double previousQuality = referenceSolution.f;
+			
+			// Use RL-based operator selection or random selection
+			selectedPerturbation = operatorSelector.selectOperator();
 			selectedPerturbation.applyPerturbation(solution);
 			feasibilityOperator.makeFeasible(solution);
 			localSearch.localSearch(solution,true);
 			distanceLS=pairwiseDistance.pairwiseSolutionDistance(solution,referenceSolution);
 			
 			evaluateSolution();
+			
+			// Calculate and provide reward to operator selector
+			double reward = OperatorSelector.calculateImprovementReward(previousQuality, solution.f);
+			operatorSelector.giveReward(reward);
+			
 			distAdjustment.distAdjustment();
 			
 			selectedPerturbation.getChosenOmega().setDistance(distanceLS);//update
@@ -169,6 +188,11 @@ public class AILSII
 		}
 		
 		totalTime=(double)(System.currentTimeMillis()-first)/1000;
+		
+		// Print operator selection statistics
+		if(inputParams.getConfig().isRlOperatorSelection()) {
+			System.out.println(operatorSelector.getAllStats());
+		}
 		
 		// Log final summary
 		Config config = inputParams.getConfig();
@@ -230,7 +254,9 @@ public class AILSII
 			selectedPerturbation.getPerturbationType().toString(),
 			selectedPerturbation.selectedInsertionHeuristic.toString(),
 			distanceLS,
-			improvement
+			improvement,
+			operatorSelector.getLastSelectedIndex(),
+			operatorSelector.getLastReward()
 		);
 	}
 	

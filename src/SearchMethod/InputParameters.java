@@ -30,6 +30,8 @@ public class InputParameters
 					case "-gamma": config.setGamma(getGamma(args[i+1]));break;
 					case "-varphi": config.setVarphi(getVarphi(args[i+1]));break;
 					case "-seed": config.setRandomSeed(getSeed(args[i+1]));break;
+					case "-useRL": config.setRlOperatorSelection(getUseRL(args[i+1]));break;
+					case "-ucbExploration": config.setUcbExplorationParam(getUcbExploration(args[i+1]));break;
 					
 				}
 			}
@@ -181,6 +183,38 @@ public class InputParameters
 			System.err.println("The -seed parameter must contain a valid long integer value.");
 		}
 		return seed;
+	}
+
+	public boolean getUseRL(String text)
+	{
+		boolean useRL = false;
+		try 
+		{
+			useRL = Boolean.parseBoolean(text);
+		} 
+		catch (Exception e) 
+		{
+			System.err.println("The -useRL parameter must be 'true' or 'false'.");
+		}
+		return useRL;
+	}
+
+	public double getUcbExploration(String text)
+	{
+		double ucbExploration = Math.sqrt(2);
+		try 
+		{
+			ucbExploration = Double.parseDouble(text);
+			if (ucbExploration <= 0) {
+				System.err.println("The -ucbExploration parameter must be positive. Using default: " + Math.sqrt(2));
+				ucbExploration = Math.sqrt(2);
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -ucbExploration parameter must contain a valid double value.");
+		}
+		return ucbExploration;
 	}
 
 	public String getFile() {

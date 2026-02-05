@@ -63,7 +63,8 @@ public class ResultsLogger {
     
     private void writeIterationHeader() throws IOException {
         iterationWriter.write("iteration,time_sec,solution_quality,gap_percent,num_routes,eta,omega,");
-        iterationWriter.write("perturbation_type,insertion_heuristic,distance_ls,improvement\n");
+        iterationWriter.write("perturbation_type,insertion_heuristic,distance_ls,improvement,");
+        iterationWriter.write("operator_index,reward\n");
         iterationWriter.flush();
     }
     
@@ -86,11 +87,13 @@ public class ResultsLogger {
     public void logIteration(int iteration, double timeSec, double quality, double gap, 
                              int numRoutes, double eta, double omega,
                              String perturbationType, String insertionHeuristic,
-                             double distanceLS, double improvement) {
+                             double distanceLS, double improvement,
+                             int operatorIndex, double reward) {
         try {
-            iterationWriter.write(String.format("%d,%.3f,%.2f,%.4f,%d,%.4f,%.4f,%s,%s,%.4f,%.4f\n",
+            iterationWriter.write(String.format("%d,%.3f,%.2f,%.4f,%d,%.4f,%.4f,%s,%s,%.4f,%.4f,%d,%.6f\n",
                 iteration, timeSec, quality, gap, numRoutes, eta, omega,
-                perturbationType, insertionHeuristic, distanceLS, improvement));
+                perturbationType, insertionHeuristic, distanceLS, improvement,
+                operatorIndex, reward));
             iterationWriter.flush();
         } catch (IOException e) {
             System.err.println("Error logging iteration: " + e.getMessage());

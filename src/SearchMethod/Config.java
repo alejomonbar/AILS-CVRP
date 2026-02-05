@@ -22,6 +22,10 @@ public class Config implements Cloneable
 	StoppingCriterionType stoppingCriterionType;
 	Long randomSeed; // null = no seed (non-deterministic), otherwise use this seed
 	
+	// RL-based operator selection
+	boolean rlOperatorSelection; // Enable RL-based operator selection
+	double ucbExplorationParam; // UCB exploration parameter (default: sqrt(2) ≈ 1.414)
+	
 	public Config() 
 	{
 //		----------------------------Main----------------------------
@@ -32,6 +36,8 @@ public class Config implements Cloneable
 		this.knnLimit=100;
 		this.varphi=40;
 		this.randomSeed=null; // Default: non-deterministic
+		this.rlOperatorSelection=false; // Default: random selection
+		this.ucbExplorationParam=Math.sqrt(2); // Default: sqrt(2) ≈ 1.414
 		
 		
 		this.epsilon=0.01;
@@ -181,6 +187,22 @@ public class Config implements Cloneable
 
 	public void setRandomSeed(Long randomSeed) {
 		this.randomSeed = randomSeed;
+	}
+
+	public boolean isRlOperatorSelection() {
+		return rlOperatorSelection;
+	}
+
+	public void setRlOperatorSelection(boolean rlOperatorSelection) {
+		this.rlOperatorSelection = rlOperatorSelection;
+	}
+
+	public double getUcbExplorationParam() {
+		return ucbExplorationParam;
+	}
+
+	public void setUcbExplorationParam(double ucbExplorationParam) {
+		this.ucbExplorationParam = ucbExplorationParam;
 	}
 
 }
