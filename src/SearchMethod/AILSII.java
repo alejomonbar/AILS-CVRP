@@ -18,6 +18,7 @@ import Perturbation.InsertionHeuristic;
 import Perturbation.Perturbation;
 import Solution.Solution;
 import RL.OperatorSelector;
+import RL.OmegaController;
 
 public class AILSII 
 {
@@ -47,6 +48,7 @@ public class AILSII
 	Perturbation[] pertubOperators;
 	Perturbation selectedPerturbation;
 	OperatorSelector operatorSelector; // RL-based operator selection
+	OmegaController omegaController; // RL-based omega control
 	
 	FeasibilityPhase feasibilityOperator;
 	ConstructSolution constructSolution;
@@ -146,6 +148,18 @@ public class AILSII
 		);
 		System.out.println("RL operator selection: " + (config.isRlOperatorSelection() ? "ENABLED" : "DISABLED"));
 		
+		// Initialize RL-based omega controller
+		this.omegaController = new OmegaController(
+			config.getDMin(), // Use dMin/dMax as omega bounds
+			config.getDMax(),
+			config.getQLearningRate(),
+			config.getQDiscountFactor(),
+			config.getQEpsilon(),
+			config.getRandomSeed(),
+			config.isRlOmegaControl()
+		);
+		System.out.println("RL omega control: " + (config.isRlOmegaControl() ? "ENABLED" : "DISABLED"));
+		
 	}
 
 	public void search()
@@ -165,21 +179,52 @@ public class AILSII
 			solution.clone(referenceSolution);
 			
 			double previousQuality = referenceSolution.f;
+			double previousBestQuality = bestF;
 			
 			// Use RL-based operator selection or random selection
 			selectedPerturbation = operatorSelector.selectOperator();
+			
+			// RL-based omega control: Get current omega before perturbation
+			int iterationsSinceImprovement = iterator - iteratorMF;
+			
+			// Apply perturbation first (this sets chosenOmega)
 			selectedPerturbation.applyPerturbation(solution);
+			
+			// Now we can get and adjust omega
+			double currentOmega = selectedPerturbation.omega; // Use the omega that was just applied
+			int omegaAction = omegaController.selectAction(iterationsSinceImprovement, currentOmega);
+			// Store action for logging, but omega for next iteration will be adjusted later via distAdjustment
+			
 			feasibilityOperator.makeFeasible(solution);
 			localSearch.localSearch(solution,true);
 			distanceLS=pairwiseDistance.pairwiseSolutionDistance(solution,referenceSolution);
 			
 			evaluateSolution();
 			
-			// Calculate and provide reward to operator selector
-			double reward = OperatorSelector.calculateImprovementReward(previousQuality, solution.f);
-			operatorSelector.giveReward(reward);
+			// Calculate rewards and update RL agents
+			boolean foundNewBest = bestF < previousBestQuality;
 			
+			// Operator selector reward
+			double operatorReward = OperatorSelector.calculateImprovementReward(previousQuality, solution.f);
+			operatorSelector.giveReward(operatorReward);
+			
+			// Omega controller reward and update
+			double omegaReward = OmegaController.calculateReward(previousQuality, solution.f, foundNewBest);
+			int newIterationsSinceImprovement = iterator - iteratorMF;
+			double finalOmega = selectedPerturbation.omega;
+			omegaController.updateQ(omegaReward, newIterationsSinceImprovement, finalOmega);
+			
+			// Standard diversity control adjustment
 			distAdjustment.distAdjustment();
+			
+			// Apply RL-based omega adjustment (overrides or modifies distAdjustment if enabled)
+			if (omegaController.isEnabled()) {
+				double adjustedOmega = omegaController.applyAction(
+					selectedPerturbation.getChosenOmega().getActualOmega(), 
+					omegaAction
+				);
+				selectedPerturbation.getChosenOmega().setActualOmega(adjustedOmega);
+			}
 			
 			selectedPerturbation.getChosenOmega().setDistance(distanceLS);//update
 			
@@ -192,6 +237,11 @@ public class AILSII
 		// Print operator selection statistics
 		if(inputParams.getConfig().isRlOperatorSelection()) {
 			System.out.println(operatorSelector.getAllStats());
+		}
+		
+		// Print omega control statistics
+		if(inputParams.getConfig().isRlOmegaControl()) {
+			System.out.println(omegaController.getStats());
 		}
 		
 		// Log final summary
@@ -256,7 +306,8 @@ public class AILSII
 			distanceLS,
 			improvement,
 			operatorSelector.getLastSelectedIndex(),
-			operatorSelector.getLastReward()
+			operatorSelector.getLastReward(),
+			omegaController.getLastAction()
 		);
 	}
 	

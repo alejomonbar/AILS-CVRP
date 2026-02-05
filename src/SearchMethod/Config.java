@@ -26,6 +26,12 @@ public class Config implements Cloneable
 	boolean rlOperatorSelection; // Enable RL-based operator selection
 	double ucbExplorationParam; // UCB exploration parameter (default: sqrt(2) ≈ 1.414)
 	
+	// RL-based omega control
+	boolean rlOmegaControl; // Enable RL-based omega adjustment
+	double qLearningRate; // Q-learning alpha (default: 0.1)
+	double qDiscountFactor; // Q-learning gamma (default: 0.9)
+	double qEpsilon; // Exploration rate (default: 0.1)
+	
 	public Config() 
 	{
 //		----------------------------Main----------------------------
@@ -38,6 +44,10 @@ public class Config implements Cloneable
 		this.randomSeed=null; // Default: non-deterministic
 		this.rlOperatorSelection=false; // Default: random selection
 		this.ucbExplorationParam=Math.sqrt(2); // Default: sqrt(2) ≈ 1.414
+		this.rlOmegaControl=false; // Default: rule-based omega adjustment
+		this.qLearningRate=0.1; // Default Q-learning alpha
+		this.qDiscountFactor=0.9; // Default Q-learning gamma
+		this.qEpsilon=0.1; // Default exploration rate
 		
 		
 		this.epsilon=0.01;
@@ -203,6 +213,38 @@ public class Config implements Cloneable
 
 	public void setUcbExplorationParam(double ucbExplorationParam) {
 		this.ucbExplorationParam = ucbExplorationParam;
+	}
+
+	public boolean isRlOmegaControl() {
+		return rlOmegaControl;
+	}
+
+	public void setRlOmegaControl(boolean rlOmegaControl) {
+		this.rlOmegaControl = rlOmegaControl;
+	}
+
+	public double getQLearningRate() {
+		return qLearningRate;
+	}
+
+	public void setQLearningRate(double qLearningRate) {
+		this.qLearningRate = qLearningRate;
+	}
+
+	public double getQDiscountFactor() {
+		return qDiscountFactor;
+	}
+
+	public void setQDiscountFactor(double qDiscountFactor) {
+		this.qDiscountFactor = qDiscountFactor;
+	}
+
+	public double getQEpsilon() {
+		return qEpsilon;
+	}
+
+	public void setQEpsilon(double qEpsilon) {
+		this.qEpsilon = qEpsilon;
 	}
 
 }

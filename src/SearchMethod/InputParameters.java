@@ -32,6 +32,10 @@ public class InputParameters
 					case "-seed": config.setRandomSeed(getSeed(args[i+1]));break;
 					case "-useRL": config.setRlOperatorSelection(getUseRL(args[i+1]));break;
 					case "-ucbExploration": config.setUcbExplorationParam(getUcbExploration(args[i+1]));break;
+					case "-useOmegaRL": config.setRlOmegaControl(getUseOmegaRL(args[i+1]));break;
+					case "-qAlpha": config.setQLearningRate(getQLearningRate(args[i+1]));break;
+					case "-qGamma": config.setQDiscountFactor(getQDiscountFactor(args[i+1]));break;
+					case "-qEpsilon": config.setQEpsilon(getQEpsilon(args[i+1]));break;
 					
 				}
 			}
@@ -215,6 +219,74 @@ public class InputParameters
 			System.err.println("The -ucbExploration parameter must contain a valid double value.");
 		}
 		return ucbExploration;
+	}
+
+	public boolean getUseOmegaRL(String text)
+	{
+		boolean useOmegaRL = false;
+		try 
+		{
+			useOmegaRL = Boolean.parseBoolean(text);
+		} 
+		catch (Exception e) 
+		{
+			System.err.println("The -useOmegaRL parameter must be 'true' or 'false'.");
+		}
+		return useOmegaRL;
+	}
+
+	public double getQLearningRate(String text)
+	{
+		double qAlpha = 0.1;
+		try 
+		{
+			qAlpha = Double.parseDouble(text);
+			if (qAlpha <= 0 || qAlpha > 1) {
+				System.err.println("The -qAlpha parameter must be in (0,1]. Using default: 0.1");
+				qAlpha = 0.1;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -qAlpha parameter must contain a valid double value.");
+		}
+		return qAlpha;
+	}
+
+	public double getQDiscountFactor(String text)
+	{
+		double qGamma = 0.9;
+		try 
+		{
+			qGamma = Double.parseDouble(text);
+			if (qGamma < 0 || qGamma > 1) {
+				System.err.println("The -qGamma parameter must be in [0,1]. Using default: 0.9");
+				qGamma = 0.9;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -qGamma parameter must contain a valid double value.");
+		}
+		return qGamma;
+	}
+
+	public double getQEpsilon(String text)
+	{
+		double qEpsilon = 0.1;
+		try 
+		{
+			qEpsilon = Double.parseDouble(text);
+			if (qEpsilon < 0 || qEpsilon > 1) {
+				System.err.println("The -qEpsilon parameter must be in [0,1]. Using default: 0.1");
+				qEpsilon = 0.1;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -qEpsilon parameter must contain a valid double value.");
+		}
+		return qEpsilon;
 	}
 
 	public String getFile() {
