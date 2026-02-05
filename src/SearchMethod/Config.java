@@ -38,6 +38,10 @@ public class Config implements Cloneable
 	double varphiQDiscountFactor; // Q-learning gamma for varphi (default: 0.9)
 	double varphiQEpsilon; // Exploration rate for varphi (default: 0.1)
 	
+	// GNN-based construction heuristic
+	boolean useGNN; // Enable GNN for initial solution construction
+	String gnnModelPath; // Path to the trained GNN model (.pt file)
+	
 	public Config() 
 	{
 //		----------------------------Main----------------------------
@@ -58,6 +62,8 @@ public class Config implements Cloneable
 		this.varphiQLearningRate=0.1; // Default Q-learning alpha for varphi
 		this.varphiQDiscountFactor=0.9; // Default Q-learning gamma for varphi
 		this.varphiQEpsilon=0.1; // Default exploration rate for varphi
+		this.useGNN=false; // Default: use classical construction heuristic
+		this.gnnModelPath="models/gnn_construction.pt"; // Default model path
 		
 		
 		this.epsilon=0.01;
@@ -287,6 +293,22 @@ public class Config implements Cloneable
 
 	public void setVarphiQEpsilon(double varphiQEpsilon) {
 		this.varphiQEpsilon = varphiQEpsilon;
+	}
+
+	public boolean isUseGNN() {
+		return useGNN;
+	}
+
+	public void setUseGNN(boolean useGNN) {
+		this.useGNN = useGNN;
+	}
+
+	public String getGnnModelPath() {
+		return gnnModelPath;
+	}
+
+	public void setGnnModelPath(String gnnModelPath) {
+		this.gnnModelPath = gnnModelPath;
 	}
 
 }
