@@ -60,6 +60,13 @@ public class LocalSearch
 		this.epsilon=config.getEpsilon();
 	}
 	
+	/**
+	 * Update neighborhood size limit (for RL-based varphi control)
+	 */
+	public void setLimitAdj(int limitAdj) {
+		this.limitAdj = limitAdj;
+	}
+	
 	private void setSolution(Solution solution) 
 	{
 		this.numRoutes=solution.numRoutes;

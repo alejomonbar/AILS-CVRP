@@ -19,6 +19,7 @@ import Perturbation.Perturbation;
 import Solution.Solution;
 import RL.OperatorSelector;
 import RL.OmegaController;
+import RL.VarphiController;
 
 public class AILSII 
 {
@@ -49,6 +50,8 @@ public class AILSII
 	Perturbation selectedPerturbation;
 	OperatorSelector operatorSelector; // RL-based operator selection
 	OmegaController omegaController; // RL-based omega control
+	VarphiController varphiController; // RL-based varphi control
+	VarphiController.Action currentVarphiAction; // Current varphi action for logging
 	
 	FeasibilityPhase feasibilityOperator;
 	ConstructSolution constructSolution;
@@ -160,6 +163,21 @@ public class AILSII
 		);
 		System.out.println("RL omega control: " + (config.isRlOmegaControl() ? "ENABLED" : "DISABLED"));
 		
+		// Initialize RL-based varphi controller
+		this.varphiController = new VarphiController(
+			config.getVarphi(), // Default varphi
+			config.getVarphiQLearningRate(),
+			config.getVarphiQDiscountFactor(),
+			config.getVarphiQEpsilon(),
+			rand
+		);
+		if (config.isRlVarphiControl()) {
+			System.out.println("RL varphi control: ENABLED");
+			System.out.println("Varphi range: [" + (config.getVarphi() / 4) + ", " + (config.getVarphi() * 2) + "]");
+		} else {
+			System.out.println("RL varphi control: DISABLED (fixed varphi=" + config.getVarphi() + ")");
+		}
+		
 	}
 
 	public void search()
@@ -172,6 +190,7 @@ public class AILSII
 		feasibilityOperator.makeFeasible(referenceSolution);
 		localSearch.localSearch(referenceSolution,true);
 		bestSolution.clone(referenceSolution);
+		currentVarphiAction = VarphiController.Action.KEEP; // Initialize
 		while(!stoppingCriterion())
 		{
 			iterator++;
@@ -180,6 +199,22 @@ public class AILSII
 			
 			double previousQuality = referenceSolution.f;
 			double previousBestQuality = bestF;
+			
+			// RL-based varphi control: Adjust neighborhood size before operations
+			VarphiController.Action varphiAction = VarphiController.Action.KEEP;
+			int previousVarphi = -1;
+			if (inputParams.getConfig().isRlVarphiControl()) {
+				// Select and apply varphi adjustment based on search progress
+				int maxIterations = stoppingCriterionType == StoppingCriterionType.Iteration ? 
+					(int)executionMaximumLimit : 10000; // For time-based, estimate max iterations
+				varphiAction = varphiController.selectAction(iterator, maxIterations);
+				previousVarphi = varphiController.getCurrentVarphi();
+				int newVarphi = varphiController.applyAction(varphiAction);
+				
+				// Update varphi in all components that use it
+				updateVarphi(newVarphi);
+			}
+			currentVarphiAction = varphiAction; // Store for logging
 			
 			// Use RL-based operator selection or random selection
 			selectedPerturbation = operatorSelector.selectOperator();
@@ -214,6 +249,14 @@ public class AILSII
 			double finalOmega = selectedPerturbation.omega;
 			omegaController.updateQ(omegaReward, newIterationsSinceImprovement, finalOmega);
 			
+			// Varphi controller reward and update
+			if (inputParams.getConfig().isRlVarphiControl()) {
+				int maxIterations = stoppingCriterionType == StoppingCriterionType.Iteration ? 
+					(int)executionMaximumLimit : 10000;
+				varphiController.updateQ(iterator - 1, iterator, maxIterations, 
+					varphiAction, solution.f, foundNewBest);
+			}
+			
 			// Standard diversity control adjustment
 			distAdjustment.distAdjustment();
 			
@@ -242,6 +285,11 @@ public class AILSII
 		// Print omega control statistics
 		if(inputParams.getConfig().isRlOmegaControl()) {
 			System.out.println(omegaController.getStats());
+		}
+		
+		// Print varphi control statistics
+		if(inputParams.getConfig().isRlVarphiControl()) {
+			varphiController.printStatistics();
 		}
 		
 		// Log final summary
@@ -307,7 +355,9 @@ public class AILSII
 			improvement,
 			operatorSelector.getLastSelectedIndex(),
 			operatorSelector.getLastReward(),
-			omegaController.getLastAction()
+			omegaController.getLastAction(),
+			varphiController.getCurrentVarphi(),
+			inputParams.getConfig().isRlVarphiControl() ? currentVarphiAction.name() : "N/A"
 		);
 	}
 	
@@ -379,6 +429,25 @@ public class AILSII
 	
 	public Perturbation[] getPertubOperators() {
 		return pertubOperators;
+	}
+	
+	/**
+	 * Update varphi (neighborhood size limit) in all components that use it
+	 */
+	private void updateVarphi(int newVarphi) {
+		// Update local search
+		localSearch.setLimitAdj(Math.min(newVarphi, instance.getSize() - 1));
+		
+		// Update feasibility operator
+		feasibilityOperator.setLimitAdj(Math.min(newVarphi, instance.getSize() - 1));
+		
+		// Update intra local search
+		intraLocalSearch.setLimitAdj(newVarphi);
+		
+		// Update perturbation operators
+		for (Perturbation pertub : pertubOperators) {
+			pertub.setLimitAdj(newVarphi);
+		}
 	}
 	
 	public double getTotalTime() {

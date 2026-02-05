@@ -66,6 +66,13 @@ public abstract class Perturbation
 		this.intraLocalSearch=intraLocalSearch;
 	}
 	
+	/**
+	 * Update neighborhood size limit (for RL-based varphi control)
+	 */
+	public void setLimitAdj(int limitAdj) {
+		this.limitAdj = limitAdj;
+	}
+	
 	public void setOrder()
 	{
 		Node aux;

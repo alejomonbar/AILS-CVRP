@@ -32,6 +32,12 @@ public class Config implements Cloneable
 	double qDiscountFactor; // Q-learning gamma (default: 0.9)
 	double qEpsilon; // Exploration rate (default: 0.1)
 	
+	// RL-based varphi control
+	boolean rlVarphiControl; // Enable RL-based varphi adjustment
+	double varphiQLearningRate; // Q-learning alpha for varphi (default: 0.1)
+	double varphiQDiscountFactor; // Q-learning gamma for varphi (default: 0.9)
+	double varphiQEpsilon; // Exploration rate for varphi (default: 0.1)
+	
 	public Config() 
 	{
 //		----------------------------Main----------------------------
@@ -48,6 +54,10 @@ public class Config implements Cloneable
 		this.qLearningRate=0.1; // Default Q-learning alpha
 		this.qDiscountFactor=0.9; // Default Q-learning gamma
 		this.qEpsilon=0.1; // Default exploration rate
+		this.rlVarphiControl=false; // Default: fixed varphi
+		this.varphiQLearningRate=0.1; // Default Q-learning alpha for varphi
+		this.varphiQDiscountFactor=0.9; // Default Q-learning gamma for varphi
+		this.varphiQEpsilon=0.1; // Default exploration rate for varphi
 		
 		
 		this.epsilon=0.01;
@@ -245,6 +255,38 @@ public class Config implements Cloneable
 
 	public void setQEpsilon(double qEpsilon) {
 		this.qEpsilon = qEpsilon;
+	}
+
+	public boolean isRlVarphiControl() {
+		return rlVarphiControl;
+	}
+
+	public void setRlVarphiControl(boolean rlVarphiControl) {
+		this.rlVarphiControl = rlVarphiControl;
+	}
+
+	public double getVarphiQLearningRate() {
+		return varphiQLearningRate;
+	}
+
+	public void setVarphiQLearningRate(double varphiQLearningRate) {
+		this.varphiQLearningRate = varphiQLearningRate;
+	}
+
+	public double getVarphiQDiscountFactor() {
+		return varphiQDiscountFactor;
+	}
+
+	public void setVarphiQDiscountFactor(double varphiQDiscountFactor) {
+		this.varphiQDiscountFactor = varphiQDiscountFactor;
+	}
+
+	public double getVarphiQEpsilon() {
+		return varphiQEpsilon;
+	}
+
+	public void setVarphiQEpsilon(double varphiQEpsilon) {
+		this.varphiQEpsilon = varphiQEpsilon;
 	}
 
 }

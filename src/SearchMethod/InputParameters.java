@@ -36,6 +36,10 @@ public class InputParameters
 					case "-qAlpha": config.setQLearningRate(getQLearningRate(args[i+1]));break;
 					case "-qGamma": config.setQDiscountFactor(getQDiscountFactor(args[i+1]));break;
 					case "-qEpsilon": config.setQEpsilon(getQEpsilon(args[i+1]));break;
+					case "-useVarphiRL": config.setRlVarphiControl(getUseVarphiRL(args[i+1]));break;
+					case "-varphiQAlpha": config.setVarphiQLearningRate(getVarphiQLearningRate(args[i+1]));break;
+					case "-varphiQGamma": config.setVarphiQDiscountFactor(getVarphiQDiscountFactor(args[i+1]));break;
+					case "-varphiQEpsilon": config.setVarphiQEpsilon(getVarphiQEpsilon(args[i+1]));break;
 					
 				}
 			}
@@ -287,6 +291,74 @@ public class InputParameters
 			System.err.println("The -qEpsilon parameter must contain a valid double value.");
 		}
 		return qEpsilon;
+	}
+
+	public boolean getUseVarphiRL(String text)
+	{
+		boolean useVarphiRL = false;
+		try 
+		{
+			useVarphiRL = Boolean.parseBoolean(text);
+		} 
+		catch (Exception e) 
+		{
+			System.err.println("The -useVarphiRL parameter must be 'true' or 'false'.");
+		}
+		return useVarphiRL;
+	}
+
+	public double getVarphiQLearningRate(String text)
+	{
+		double varphiQAlpha = 0.1;
+		try 
+		{
+			varphiQAlpha = Double.parseDouble(text);
+			if (varphiQAlpha <= 0 || varphiQAlpha > 1) {
+				System.err.println("The -varphiQAlpha parameter must be in (0,1]. Using default: 0.1");
+				varphiQAlpha = 0.1;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -varphiQAlpha parameter must contain a valid double value.");
+		}
+		return varphiQAlpha;
+	}
+
+	public double getVarphiQDiscountFactor(String text)
+	{
+		double varphiQGamma = 0.9;
+		try 
+		{
+			varphiQGamma = Double.parseDouble(text);
+			if (varphiQGamma < 0 || varphiQGamma > 1) {
+				System.err.println("The -varphiQGamma parameter must be in [0,1]. Using default: 0.9");
+				varphiQGamma = 0.9;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -varphiQGamma parameter must contain a valid double value.");
+		}
+		return varphiQGamma;
+	}
+
+	public double getVarphiQEpsilon(String text)
+	{
+		double varphiQEpsilon = 0.1;
+		try 
+		{
+			varphiQEpsilon = Double.parseDouble(text);
+			if (varphiQEpsilon < 0 || varphiQEpsilon > 1) {
+				System.err.println("The -varphiQEpsilon parameter must be in [0,1]. Using default: 0.1");
+				varphiQEpsilon = 0.1;
+			}
+		} 
+		catch (java.lang.NumberFormatException e) 
+		{
+			System.err.println("The -varphiQEpsilon parameter must contain a valid double value.");
+		}
+		return varphiQEpsilon;
 	}
 
 	public String getFile() {

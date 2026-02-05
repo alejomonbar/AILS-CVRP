@@ -32,6 +32,13 @@ public class IntraLocalSearch
 		this.limitAdj=config.getVarphi();
 	}
 	
+	/**
+	 * Update neighborhood size limit (for RL-based varphi control)
+	 */
+	public void setLimitAdj(int limitAdj) {
+		this.limitAdj = limitAdj;
+	}
+	
 	private void setRoute(Route route,Node solution[]) 
 	{
 		this.prevF=route.fRoute;
